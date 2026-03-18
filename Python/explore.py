@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-folder_path = "dataset for E-Commerce Anaytics\Dataset"
+folder_path = "dataset for E-Commerce Anaytics\Dataset\Raw"
 
 for file in os.listdir(folder_path):
     if file.endswith(".csv"):
