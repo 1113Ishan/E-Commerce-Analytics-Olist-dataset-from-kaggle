@@ -198,6 +198,145 @@ limit 10;
 
 
 
--- Creating dim_date
+/* 
+ * Now for the Analytics. 
+ * First, revenue analysis, group by year, order by month, and see when do the orders spike, ie. what time of the year has more sales. 
+ */
+
+select 
+	order_year,
+	order_month,
+	sum(price) as total_revenue,
+	count(distinct order_id) as total_orders,
+	sum(price)/count(distinct order_id) as avg_order_value
+from fact_sales
+group by fact_sales.order_year, fact_sales.order_month 
+order by fact_sales.order_year, fact_sales.order_month 
 
 
+-- Revenue analysis by product category
+
+select
+	dp.product_category_name_english as category,
+	sum(fs.price) as total_revenue,
+	count(*) as total_sold,
+	avg(fs.price) as average_price
+from fact_sales fs
+join dim_product dp 
+	on dp.product_id = fs.product_id 
+group by dp.product_category_name_english 
+order by total_revenue desc;
+
+
+--- Customer Analysis
+
+
+-- Total customers (customer_unique_id count)
+SELECT 
+    COUNT(DISTINCT c.customer_unique_id) AS total_customers
+FROM fact_sales fs
+JOIN orders o 
+    ON fs.order_id = o.order_id
+JOIN customers c 
+    ON o.customer_id = c.customer_id;
+
+
+
+-- Orders per customer (using CTE)
+WITH customer_orders AS (
+    SELECT 
+        c.customer_unique_id,
+        COUNT(DISTINCT fs.order_id) AS total_orders
+    FROM fact_sales fs
+    JOIN orders o 
+        ON fs.order_id = o.order_id
+    JOIN customers c 
+        ON o.customer_id = c.customer_id
+    GROUP BY c.customer_unique_id
+)
+select
+	count(case when total_orders = 1 then 1 end) as new_customers,
+	count(case when total_orders > 1 then 1 end) as returning_customers
+from customer_orders;
+
+/*
+ * New customers = 92507
+ * Returning customers = 2913
+ */
+
+-- Total spent per customer
+SELECT 
+    c.customer_unique_id,
+    SUM(fs.price) AS customer_lifetime_value
+FROM fact_sales fs
+JOIN orders o 
+    ON fs.order_id = o.order_id
+JOIN customers c 
+    ON o.customer_id = c.customer_id
+GROUP BY c.customer_unique_id
+ORDER BY customer_lifetime_value DESC;
+
+
+-- Average money spent per customer
+select avg(customer_spend) as avg_customer_spend
+from(
+	select 
+		c.customer_unique_id,
+		sum(fs.price) as customer_spend
+	from fact_sales  fs
+		join orders o on o.customer_id = fs.customer_id 
+		join customers c on c.customer_id = fs.customer_id 
+	group by c.customer_unique_id 
+) t;
+ -- Average_customer_spend = 141.7305
+
+
+-- Order delivery analysis (customer experience analysis)
+
+
+-- Average delivery time
+SELECT 
+    AVG(order_delivered_customer_date - order_purchase_timestamp) AS avg_delivery_time
+FROM fact_sales
+WHERE order_delivered_customer_date IS NOT NULL;
+-- 12 Days
+
+-- Delivery delay analysis
+select 
+	avg(order_delivered_customer_date - order_estimated_delivery_date)
+	from fact_sales 
+where order_delivered_customer_date is not null;
+-- Order is being delivered before the estimated time which is good. 
+
+-- Ontime vs late delivery analysis
+
+select 
+	case
+		when order_delivered_customer_date > order_estimated_delivery_date
+		then 'Late'
+		else 'On-Time'
+	end as delivery_status,
+	count(*) as total_orders
+from fact_sales
+where order_delivered_customer_date is not null
+group by delivery_status;
+
+/*
+ * Late deliveries = 8715
+ * On-Time deliveries = 101,481
+ */
+
+-- Total delivery time trend
+
+select
+	order_year,
+	order_month,
+	avg(order_delivered_customer_date - order_purchase_timestamp) as average_delivery_time
+from fact_sales 
+where order_delivered_customer_date is not null
+group by order_year, order_month
+order by order_year, order_month;
+
+
+
+	
