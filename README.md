@@ -40,3 +40,7 @@ This project demonstrates how raw e-commerce data can be transformed into action
 - Target repeat customers with loyalty programs  
 - Optimize delivery processes  
 - Adjust inventory and marketing strategies based on customer behavior and product trends
+
+
+<img width="1456" height="804" alt="image" src="https://github.com/user-attachments/assets/e8e7d3c8-1a2d-4aa7-a268-1682174dd996" />
+<img width="1428" height="805" alt="image" src="https://github.com/user-attachments/assets/8dabc626-5ac6-4134-a0bb-dd591f02bc45" />
